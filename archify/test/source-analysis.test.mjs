@@ -122,3 +122,22 @@ test('trace requires explicit target and bounds execution time', { skip: !python
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('trace abrupt zero exit and excessive target output cannot report success', { skip: !python && 'Set ARCHIFY_PYTHON' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-trace-abrupt-'));
+  try {
+    const script = path.join(dir, 'entry.py');
+    for (const [name, source] of [
+      ['abrupt', 'import os\nos._exit(0)\n'],
+      ['output', 'print("x" * 6000000)\n'],
+    ]) {
+      fs.writeFileSync(script, source);
+      const result = run(['trace', 'python', dir, '--python', python, '--entry', script,
+        '--out', path.join(dir, `${name}.json`)]);
+      assert.equal(result.status, 1);
+      assert.equal(JSON.parse(result.stdout).status, 'ERROR');
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

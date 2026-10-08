@@ -39,10 +39,17 @@ export function commandTrace(args) {
     const result = spawnSync(python, argv, { encoding: 'utf8', windowsHide: true,
       cwd: path.resolve(root), timeout, maxBuffer: 4 * 1024 * 1024,
       env: { ...process.env, PYTHONUTF8: '1' } });
-    if (result.stdout) process.stdout.write(result.stdout);
-    if (result.stderr) process.stderr.write(result.stderr);
     if (result.error) throw result.error;
+    if (result.stderr) process.stderr.write(result.stderr);
     if (result.signal) throw new Error(`Trace interpreter ended with ${result.signal}; evidence may be incomplete.`);
+    let receipt;
+    try { receipt = JSON.parse(result.stdout); } catch {
+      throw new Error('Trace interpreter returned no complete receipt; evidence is incomplete.');
+    }
+    if (!['PASS', 'PARTIAL', 'ERROR'].includes(receipt?.status)) {
+      throw new Error('Trace interpreter returned an invalid receipt.');
+    }
+    process.stdout.write(result.stdout);
     process.exitCode = result.status ?? 1;
   } catch (error) {
     console.log(JSON.stringify({ status: 'ERROR', diagnostics: [{ code: 'trace/arguments-or-runtime',
