@@ -168,7 +168,7 @@ jobs:
         with:
           node-version: 22
       - name: Public notifier manifest must reference an existing stable Release
-        if: needs.scope.outputs.scope == 'full'
+        if: needs.scope.outputs.scope == 'full' && github.repository != 'GGboom-er/archify'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -359,7 +359,7 @@ jobs:
         run: scripts/windows-path-fixtures.ps1 -NodeVersion '${{ matrix.node-version }}' -Cleanup
 
   deploy-pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository != 'GGboom-er/archify'
     needs: [test, webm-artifact, zip-freshness, published-update-manifest, package-smoke, windows-test-portability, website]
     runs-on: ubuntu-latest
     concurrency:

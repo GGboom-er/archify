@@ -31,10 +31,10 @@ node archify/bin/archify.mjs analyze python /path/to/project \
   --markdown /path/to/new-run/coverage.md --json
 ```
 
-This change is delivered as source commits. It does not publish a new upstream
-release, overwrite version 3.0.1, or regenerate the upstream `archify.zip`. That
-archive remains the upstream artifact and does **not** contain this enhancement.
-Use the source checkout, not the old archive, for the added command.
+This change is maintained by source commit, without publishing a new upstream
+release or version. The checked-in `archify.zip` is rebuilt from this fork and
+contains the enhancement; identify this build by its fork commit, not the inherited
+upstream 3.0.1 metadata. Use the source checkout for development and maintenance.
 
 ## Maintenance and validation
 
@@ -45,6 +45,13 @@ Use the source checkout, not the old archive, for the added command.
 - The dedicated CI workflow runs those tests with Python 3.10/3.12 and Node 22.
 - Reuse upstream diagram/finalize checks after changing the shared entry point.
 - Track upstream separately; review compatibility before updating the pinned base.
+
+On `GGboom-er/archify`, CI rebuilds and byte-compares the current package. It does
+not require an upstream-style stable GitHub Release.
+Automatic Pages deployment is disabled for this source-only fork. Renderer,
+browser, package-smoke, Windows path and source-analysis tests remain enabled.
+Windows repository-evidence fixtures use the checkout's actual origin, preserving
+origin validation instead of incorrectly asserting the upstream repository URL.
 
 Static call resolution supports source navigation. The agent remains responsible
 for tracing actual data, checking dynamic dispatch and validating runtime behavior.
