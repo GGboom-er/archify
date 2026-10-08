@@ -1,0 +1,41 @@
+name: Source analysis
+
+on:
+  push:
+    paths:
+      - 'archify/analysis/**'
+      - 'archify/bin/archify.mjs'
+      - 'archify/bin/analyze.mjs'
+      - 'archify/test/source*'
+      - '.github/workflows/source-analysis.yml'
+  pull_request:
+    paths:
+      - 'archify/analysis/**'
+      - 'archify/bin/archify.mjs'
+      - 'archify/bin/analyze.mjs'
+      - 'archify/test/source*'
+      - '.github/workflows/source-analysis.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s archify/test -p source_analysis_test.py
+      - name: Select the provisioned interpreter
+        shell: bash
+        run: python -c 'import os,sys; f=open(os.environ["GITHUB_ENV"],"a"); f.write("ARCHIFY_PYTHON="+sys.executable+"\n"); f.close()'
+      - run: node --test archify/test/source-analysis.test.mjs

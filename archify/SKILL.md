@@ -16,6 +16,12 @@ Run commands from your working directory. Unless the user names another location
 
 For a real codebase, read [Repository authoring](references/repository-authoring.md) while tracing the requested behavior. A system description uses the steps below; an existing JSON uses the handoff path.
 
+For a Python repository in this fork, use the optional [source analysis](references/source-analysis.md)
+command to inventory symbols, calls and unresolved relationships before authoring.
+Reuse a matching existing report; source hashes identify its input. The agent must
+verify selected relationships and complete the behavior checklist. Resolution and
+parse counts do not establish runtime behavior or semantic completeness.
+
 ## Existing candidate handoff
 
 When the user supplies a frozen candidate, run `finalize` first as one CLI invocation. Its passing receipt completes the automated gates; follow any visual review recommendation under Delivery before claiming visual quality. For repair, follow step 5.
