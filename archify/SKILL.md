@@ -21,6 +21,11 @@ command to inventory symbols, calls and unresolved relationships before authorin
 Reuse a matching existing report; source hashes identify its input. The agent must
 verify selected relationships and complete the behavior checklist. Resolution and
 parse counts do not establish runtime behavior or semantic completeness.
+When dynamic behavior needs evidence and running a selected entry is authorized,
+use the explicit `trace python` workflow in that reference, then attach its report
+with `analyze --trace`. This executes the script; never infer permission to launch
+production code from a read-only architecture request. Observations retain source
+identity, run failures and unobserved paths; they do not certify output correctness.
 
 ## Existing candidate handoff
 

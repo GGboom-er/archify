@@ -11,9 +11,16 @@ export function commandAnalyze(args) {
       throw new Error('Usage: analyze python <repo-root> --python <executable> --out <new.json> [--markdown <new.md>] [--json]');
     }
     const options = new Map();
+    const traces = [];
     for (let i = 0; i < rest.length; i += 1) {
       const key = rest[i];
       if (key === '--json') continue;
+      if (key === '--trace') {
+        const value = rest[++i];
+        if (!value || value.startsWith('--')) throw new Error('Missing value for --trace');
+        traces.push(path.resolve(value));
+        continue;
+      }
       if (!['--python', '--out', '--markdown'].includes(key) || options.has(key)) {
         throw new Error(`Unknown or repeated option: ${key}`);
       }
@@ -28,6 +35,7 @@ export function commandAnalyze(args) {
     if (!path.isAbsolute(python)) throw new Error('--python must name an absolute executable path.');
     const argv = ['-I', entry, path.resolve(root), '--out', path.resolve(options.get('--out'))];
     if (options.has('--markdown')) argv.push('--markdown', path.resolve(options.get('--markdown')));
+    for (const trace of traces) argv.push('--trace', trace);
     const result = spawnSync(python, argv, { encoding: 'utf8', windowsHide: true,
       maxBuffer: 4 * 1024 * 1024, env: { ...process.env, PYTHONUTF8: '1' } });
     if (result.error) throw result.error;

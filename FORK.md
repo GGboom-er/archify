@@ -16,8 +16,15 @@ target repository. Existing diagram schemas and rendering behavior are unchanged
 
 See [source analysis usage and limitations](archify/references/source-analysis.md).
 The analyzer currently supports Python 3.10+ source syntax, not arbitrary languages,
-runtime tracing or automatic proof of complete behavior. Parse failures produce a
+or automatic proof of complete behavior. Parse failures produce a
 partial report; unknown calls are retained rather than guessed.
+
+`archify trace python` adds optional runtime evidence for an explicitly selected
+script. Attach it with `analyze --trace`: source hashes and observed code identity
+are checked, dynamic Python frame relationships and unobserved sites are reported,
+and incomplete/failed runs remain visible. Static conclusions are preserved.
+This executes the target with normal permissions, separate from read-only analysis;
+it does not prove every path or output. Usage is in the reference above.
 
 ## Use this fork
 
@@ -39,7 +46,7 @@ upstream 3.0.1 metadata. Use the source checkout for development and maintenance
 ## Maintenance and validation
 
 - Keep analysis implementation in `archify/analysis/` and CLI adaptation in
-  `archify/bin/analyze.mjs`; the existing CLI only adds dispatch and help.
+  `archify/bin/analyze.mjs` / `trace.mjs`; the existing CLI only adds dispatch and help.
 - Keep public fixtures synthetic. Private repository analysis reports stay local.
 - Run Python behavioral tests and Node CLI tests as documented in source-analysis.md.
 - The dedicated CI workflow runs those tests with Python 3.10/3.12 and Node 22.

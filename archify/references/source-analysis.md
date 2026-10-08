@@ -75,12 +75,70 @@ supported in this phase.
    repository evidence checks are unchanged.
 
 Re-run in a new directory after code changes. This phase records source hashes
-but does not implement automatic incremental invalidation or runtime tracing.
+but does not implement automatic incremental invalidation.
+
+## Optional runtime evidence
+
+`trace` is a separate, explicit execution command. Select an entry whose execution
+is authorized for the task. It runs with the selected interpreter's normal
+permissions and dependencies, with the repository root as its working directory.
+It is not a sandbox. Static `analyze` never launches the target, including when
+attaching an existing trace.
+
+```sh
+node /absolute/archify/bin/archify.mjs trace python /absolute/repository \
+  --python /absolute/python3 --entry /absolute/repository/tests/probe.py \
+  --out /absolute/new-run/runtime.json --timeout-ms 120000 --max-events 200000 \
+  -- --scenario example
+
+node /absolute/archify/bin/archify.mjs analyze python /absolute/repository \
+  --python /absolute/python3 --trace /absolute/new-run/runtime.json \
+  --out /absolute/new-run/observed.json --markdown /absolute/new-run/observed.md
+```
+
+Repeat `--trace` with distinct reports for multiple scenarios. The merger requires
+exactly the current Python file inventory and SHA-256 values, rejecting changed,
+added or removed source. It validates consistency, not authenticity of edited data.
+
+The recorder checks observed code objects against a compiled source snapshot and
+records Python frame relationships and event counts. It captures dynamic dispatch,
+registry/factory calls and callbacks that actually run, including newly started
+Python threads. Existing threads, subprocesses and native internals are outside
+the scope. `observed_python_stack` links visible Python frames; native callback
+intermediaries can be hidden, so it does not necessarily mean a direct source call.
+Generator/coroutine resumptions can emit additional call events.
+
+Reports contain identities, positions and counts, not argument values, locals,
+command-line arguments or return values. Normal target stdout goes to stderr,
+leaving stdout for the CLI receipt.
+
+Python 3.11+ column metadata can match an exact AST call range. Python 3.10
+line-only observations remain `line_candidates`, even with one explicit call:
+an implicit descriptor/operator could occupy the same line. Unmapped frames stay
+visible without fabricated IDs. Static `status`/`targets` never change; observations
+use separate `runtime_observed` and `runtime_observations` fields. `runtime_test`
+and `behavior_review` do not automatically become passed.
+
+`PASS` means the selected entry finished without a detected recording gap.
+`PARTIAL`/exit 2 retains evidence after target/thread failures, profiler changes,
+event limits or unfinished threads. Source changes also prevent merging.
+`outcome` describes the entry script; `thread_failed` separately records worker
+failure even if the entry itself returned normally. `ERROR`/exit 1 covers invalid
+paths, existing outputs and launch/time-limit failures. Timeout or abrupt exit may
+leave an incomplete report, which is invalid evidence; use a new path on retry.
+The default timeout is 120000 ms. The event limit bounds target events recorded,
+not target work.
+
+This is cooperative instrumentation, not tamper-proof monitoring. It cannot prove
+all paths ran, outputs are correct, or timings match an uninstrumented run. Use
+assertion-bearing scenarios and inspect unobserved relationships; behavior and
+performance still need their own acceptance tests.
 
 ## Tests
 
 ```sh
 /absolute/python3 -m unittest discover -s archify/test -p source_analysis_test.py
+/absolute/python3 -m unittest discover -s archify/test -p source_runtime_test.py
 ARCHIFY_PYTHON=/absolute/python3 node --test archify/test/source-analysis.test.mjs
 ```
 

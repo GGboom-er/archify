@@ -2175,7 +2175,8 @@ function invalidProvenance(artifactPath, sidecar, reason, evidence = {}) {
 
 function usage() {
   return `Usage:
-  archify analyze python <repo-root> --python <absolute-executable> --out <new.json> [--markdown <new.md>] [--json]
+  archify analyze python <repo-root> --python <absolute-executable> --out <new.json> [--markdown <new.md>] [--trace <runtime.json>] [--json]
+  archify trace python <repo-root> --python <absolute-executable> --entry <script.py> --out <new.json> [-- script-args]
   archify render <type> <input.json> [output.html] [--quality standard|showcase] [--repo-root path]
   archify compare architecture <base.json> <head.json> [output.html] [--receipt path] [--json] [--quality standard|showcase] [--repo-root path]
   archify deliver <type> <input.json> [output.html] [--json] [--open] [--quality standard|showcase] [--repo-root path]
@@ -6869,6 +6870,9 @@ try {
   switch (command) {
     case 'analyze':
       (await import('./analyze.mjs')).commandAnalyze(args);
+      break;
+    case 'trace':
+      (await import('./trace.mjs')).commandTrace(args);
       break;
     case undefined:
     case '-h':

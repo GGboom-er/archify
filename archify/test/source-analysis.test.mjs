@@ -59,3 +59,66 @@ test('analyze propagates partial parse failures without losing valid-file eviden
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('trace real CLI executes explicit entry then attaches observed dynamic calls', { skip: !python && 'Set ARCHIFY_PYTHON' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-trace-'));
+  try {
+    const script = path.join(dir, 'entry.py');
+    const trace = path.join(dir, 'trace.json');
+    fs.writeFileSync(script, 'import sys\ndef work(): return 7\nregistry={"run":work}\nassert registry["run"]()==7\nassert sys.argv[1:]==["--input", "a b"]\nprint("target-log 运行证据")\n');
+    const traced = run(['trace', 'python', dir, '--python', python, '--entry', script,
+      '--out', trace, '--', '--input', 'a b'], os.tmpdir());
+    assert.equal(traced.status, 0, traced.stderr + traced.stdout);
+    assert.equal(JSON.parse(traced.stdout).status, 'PASS');
+    assert.match(traced.stderr, /target-log 运行证据/);
+    const result = run(['analyze', 'python', dir, '--python', python, '--trace', trace,
+      '--out', path.join(dir, 'analysis.json'), '--markdown', path.join(dir, 'coverage.md')]);
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.equal(JSON.parse(result.stdout).runtime_verified, false);
+    assert.equal(JSON.parse(result.stdout).runtime_observed, true);
+    const report = JSON.parse(fs.readFileSync(path.join(dir, 'analysis.json')));
+    assert.ok(report.runtime.observed_symbols > 0);
+    assert.match(fs.readFileSync(path.join(dir, 'coverage.md'), 'utf8'), /Runtime observations/);
+    fs.appendFileSync(script, '# changed\n');
+    const stale = run(['analyze', 'python', dir, '--python', python, '--trace', trace,
+      '--out', path.join(dir, 'stale.json')]);
+    assert.equal(stale.status, 1);
+    assert.match(stale.stdout, /SHA-256/);
+    assert.equal(fs.existsSync(path.join(dir, 'stale.json')), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('trace and analysis retain failure evidence as PARTIAL', { skip: !python && 'Set ARCHIFY_PYTHON' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-trace-failure-'));
+  try {
+    const script = path.join(dir, 'entry.py');
+    const trace = path.join(dir, 'trace.json');
+    fs.writeFileSync(script, 'def fail(): raise ValueError("expected")\nfail()\n');
+    const result = run(['trace', 'python', dir, '--python', python, '--entry', script, '--out', trace]);
+    assert.equal(result.status, 2);
+    assert.equal(JSON.parse(result.stdout).outcome.status, 'failed');
+    const merged = run(['analyze', 'python', dir, '--python', python, '--trace', trace,
+      '--out', path.join(dir, 'analysis.json')]);
+    assert.equal(merged.status, 2);
+    assert.equal(JSON.parse(merged.stdout).status, 'PARTIAL');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('trace requires explicit target and bounds execution time', { skip: !python && 'Set ARCHIFY_PYTHON' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-trace-timeout-'));
+  try {
+    const script = path.join(dir, 'entry.py');
+    fs.writeFileSync(script, 'while True: pass\n');
+    const base = ['trace', 'python', dir, '--python', python, '--out', path.join(dir, 'trace.json')];
+    assert.equal(run(base).status, 1);
+    const timed = run([...base, '--entry', script, '--timeout-ms', '500']);
+    assert.equal(timed.status, 1);
+    assert.equal(JSON.parse(timed.stdout).status, 'ERROR');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

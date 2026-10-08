@@ -63,6 +63,7 @@ class Scanner(ast.NodeVisitor):
             if blocked else self.resolver.expression(node.func, self.scope)
         row = {'id': f'{self.scope.path}:{node.lineno}:{node.col_offset}',
                'caller': self.scope.key, 'expression': expression_text(node.func),
+               'end_line': node.end_lineno, 'end_column': node.end_col_offset,
                **self.location(node), 'status': result.status,
                'targets': list(result.targets), 'reason': result.reason,
                'reference': result.reference, 'guards': [dict(g) for g in self.guards]}
@@ -147,6 +148,8 @@ def build_report(index):
         symbols.append({'id': scope.key, 'module': scope.module, 'path': scope.path,
             'name': getattr(scope.node, 'name', '<module>'), 'kind': scope.kind,
             'line': getattr(scope.node, 'lineno', 1),
+            'runtime_line': min([getattr(scope.node, 'lineno', 1)] +
+                                [d.lineno for d in getattr(scope.node, 'decorator_list', [])]),
             'end_line': getattr(scope.node, 'end_lineno', None),
             'parent': scope.parent.key if scope.parent else None,
             'decorated': bool(getattr(scope.node, 'decorator_list', [])),
